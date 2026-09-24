@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ransomware Family Detector</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1117;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+
+        header span {
+            font-size: 0.85rem;
+            color: #8b949e;
+            background: #21262d;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid #30363d;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .tab {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            background: #161b22;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #1f6feb;
+            border-color: #1f6feb;
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        .panel {
+            display: none;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 30px;
+        }
+
+        .panel.active { display: block; }
+
+        .panel h2 {
+            font-size: 1.1rem;
+            color: #c9d1d9;
+            margin-bottom: 8px;
+        }
+
+        .panel p {
+            font-size: 0.85rem;
+            color: #8b949e;
+            margin-bottom: 25px;
+        }
+
+        /* File Upload */
+        .upload-zone {
+            border: 2px dashed #30363d;
+            border-radius: 10px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #58a6ff;
+            background: #1c2230;
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .upload-zone h3 {
+            color: #c9d1d9;
+            margin-bottom: 6px;
+        }
+
+        .upload-zone small {
+            color: #8b949e;
+            font-size: 0.8rem;
+        }
+
+        .file-selected {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: #21262d;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #58a6ff;
+            display: none;
+        }
+
+        /* Manual Form */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 9px 12px;
+            color: #c9d1d9;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 11px 28px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: #1f6feb;
+            color: white;
+        }
+
+        .btn-primary:hover { background: #388bfd; }
+        .btn-primary:disabled {
+            background: #21262d;
+            color: #484f58;
+            cursor: not-allowed;
+        }
+
+        /* Results */
+        .result-box {
+            margin-top: 25px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 25px;
+            display: none;
+        }
+
+        .result-box.visible { display: block; }
+
+        .result-family {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .result-confidence {
+            font-size: 0.9rem;
+            color: #8b949e;
+            margin-bottom: 20px;
+        }
+
+        .family-bars { margin-top: 15px; }
+
+        .family-bar-item {
+            margin-bottom: 12px;
+        }
+
+        .family-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            color: #c9d1d9;
+        }
+
+        .bar-track {
+            background: #21262d;
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .result-akira { color: #f78166; }
+        .result-blackcat { color: #d2a8ff; }
+        .result-dragonforce { color: #79c0ff; }
+        .result-lockbit { color: #56d364; }
+        .result-maze { color: #e3b341; }
+
+        .bar-akira { background: #f78166; }
+        .bar-blackcat { background: #d2a8ff; }
+        .bar-dragonforce { background: #79c0ff; }
+        .bar-lockbit { background: #56d364; }
+        .bar-maze { background: #e3b341; }
+        .bar-default { background: #58a6ff; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #8b949e;
+            display: none;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #3d1c1c;
+            border: 1px solid #f85149;
+            border-radius: 8px;
+            color: #f85149;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .warning-badge {
+            display: inline-block;
+            background: #3d2c00;
+            border: 1px solid #e3b341;
+            color: #e3b341;
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🛡️ Ransomware Family Detector</h1>
+    <span>ML-Powered</span>
+    <span>Random Forest + XGBoost</span>
+</header>
+
+<div class="container">
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('file')">📁 File Upload</button>
+        <button class="tab" onclick="switchTab('manual')">⌨️ Manual Input</button>
+    </div>
+
+    <!-- File Upload Panel -->
+    <div id="panel-file" class="panel active">
+        <h2>Upload Executable for Analysis</h2>
+        <p>Upload a .exe or .dll file. Features are extracted automatically and analysed by the model. The file is never executed and is deleted immediately after analysis.</p>
+
+        <div class="warning-badge">⚠️ For research and educational use only</div>
+
+        <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" accept=".exe,.dll" onchange="handleFileSelect(this)">
+            <div class="upload-icon">📂</div>
+            <h3>Drop file here or click to browse</h3>
+            <small>Supported: .exe, .dll — Max size: 50MB</small>
+        </div>
+
+        <div class="file-selected" id="fileSelected"></div>
+
+        <button class="btn btn-primary" id="analyseBtn" onclick="analyseFile()" disabled>
+            Analyse File
+        </button>
+    </div>
+
+    <!-- Manual Input Panel -->
+    <div id="panel-manual" class="panel">
+        <h2>Manual Feature Input</h2>
+        <p>Enter PE feature values manually to get a prediction. Useful for testing specific feature combinations.</p>
+
+        <div class="features-grid" id="featuresGrid"></div>
+
+        <button class="btn btn-primary" onclick="analyseManual()">
+            Get Prediction
+        </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Analysing sample...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Results -->
+    <div class="result-box" id="resultBox">
+        <div style="margin-bottom: 15px; font-size: 0.8rem; color: #8b949e;">DETECTED FAMILY</div>
+        <div class="result-family" id="resultFamily"></div>
+        <div class="result-confidence" id="resultConfidence"></div>
+        <hr style="border-color: #30363d; margin: 15px 0;">
+        <div style="font-size: 0.85rem; color: #8b949e; margin-bottom: 12px;">PROBABILITY BREAKDOWN</div>
+        <div class="family-bars" id="familyBars"></div>
+    </div>
+
+</div>
+
+<script>
+    const FEATURES = {{ features | tojson }};
+    const FAMILY_COLORS = {
+        'Akira': 'akira',
+        'BlackCat': 'blackcat',
+        'DragonForce': 'dragonforce',
+        'LockBit': 'lockbit',
+        'Maze': 'maze'
+    };
+
+    // ── Build Manual Input Form ───────────────────────────────
+    const grid = document.getElementById('featuresGrid');
+    FEATURES.forEach(feat => {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `
+            <label>${feat.replace(/_/g, ' ')}</label>
+            <input type="number" id="feat_${feat}" placeholder="0" step="any">
+        `;
+        grid.appendChild(div);
+    });
+
+    // ── Tab Switching ─────────────────────────────────────────
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById(`panel-${tab}`).classList.add('active');
+        hideResults();
+    }
+
+    // ── File Handling ─────────────────────────────────────────
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const selected = document.getElementById('fileSelected');
+        selected.style.display = 'block';
+        selected.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        document.getElementById('analyseBtn').disabled = false;
+    }
+
+    const uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+    });
+    uploadZone.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            document.getElementById('fileInput').files = e.dataTransfer.files;
+            handleFileSelect(document.getElementById('fileInput'));
+        }
+    });
+
+    // ── Analyse File ──────────────────────────────────────────
+    async function analyseFile() {
+        const fileInput = document.getElementById('fileInput');
+        if (!fileInput.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        showLoading();
+        try {
+            const res = await fetch('/predict/file', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.error) showError(data.error);
+            else showResults(data);
+        } catch (e) {
+            showError('Connection error. Make sure the server is running.');
+        }
+    }
+
+    // ── Analyse Manual ────────────────────────────────────────
+    async function analyseManual() {
+        const features = {};
+        let missing = false;
+
+        FEATURES.forEach(feat => {
+            const val = document.getElementById(`feat_${feat}`).value;
+            if (val === '') { missing = true; return; }
+            features[feat] = parseFloat(val);
+        });
+
+        if (missing) {
+            showError('Please fill in all feature fields.');
+            return;
+        }
+
+        showLoading();
+        try {
+            const res = await fetch('/predict/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(features)
+            });
+            const data = await res.json();
+            if (data.error) showError(data.error);
+            else showResults(data);
+        } catch (e) {
+            showError('Connection error. Make sure the server is running.');
+        }
+    }
+
+    // ── Display Results ───────────────────────────────────────
+    function showResults(data) {
+        hideLoading();
+        hideError();
+
+        const family = data.predicted_family;
+        const colorClass = FAMILY_COLORS[family] || 'default';
+
+        document.getElementById('resultFamily').className = `result-family result-${colorClass.toLowerCase()}`;
+        document.getElementById('resultFamily').textContent = family;
+        document.getElementById('resultConfidence').textContent =
+            `Confidence: ${data.confidence}% — Ensemble of Random Forest + XGBoost`;
+
+        const barsDiv = document.getElementById('familyBars');
+        barsDiv.innerHTML = '';
+
+        const sorted = Object.entries(data.family_scores)
+            .sort((a, b) => b[1] - a[1]);
+
+        sorted.forEach(([fam, score]) => {
+            const c = FAMILY_COLORS[fam] || 'default';
+            barsDiv.innerHTML += `
+                <div class="family-bar-item">
+                    <div class="family-bar-label">
+                        <span>${fam}</span>
+                        <span>${score}%</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill bar-${c.toLowerCase()}"
+                             style="width: ${score}%"></div>
+                    </div>
+                </div>`;
+        });
+
+        document.getElementById('resultBox').classList.add('visible');
+    }
+
+    function showLoading() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultBox').classList.remove('visible');
+        hideError();
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    function showError(msg) {
+        hideLoading();
+        const box = document.getElementById('errorBox');
+        box.style.display = 'block';
+        box.textContent = '⚠️ ' + msg;
+    }
+
+    function hideError() {
+        document.getElementById('errorBox').style.display = 'none';
+    }
+
+    function hideResults() {
+        document.getElementById('resultBox').classList.remove('visible');
+        hideError();
+        hideLoading();
+    }
+</script>
+
+</body>
+</html>
