@@ -57,7 +57,11 @@ Predictions are displayed as a top family plus a confidence breakdown across all
 ## Demo
 
 <!-- Add the demo video here on GitHub (see README notes) -->
-*A short demo of the web application is available in the repository.*
+https://github.com/user-attachments/assets/7b043f4d-b4dd-4088-9a9c-9f872b86cf62
+
+
+
+
 
 ## Repository structure
 
