@@ -2,10 +2,10 @@
 
 A machine learning system that classifies Windows ransomware executables into their respective families using static analysis of Portable Executable (PE) features. Developed as a graduate capstone project under the Master of Applied Cybersecurity (MACSEC) program at the University of New Brunswick.
 
-**Author:** Moyosoreoluwa Toluhi
-**Course:** CS6497 Capstone Project, University of New Brunswick
-**Supervisor:** Dr. Saqib Hakak
-**Project title:** *Comparative Analysis of Modern Ransomware Families*
+- **Author:** Moyosoreoluwa Toluhi
+- **Course:** CS6497 Capstone Project, University of New Brunswick
+- **Supervisor:** Dr. Saqib Hakak
+- **Project title:** *Comparative Analysis of Modern Ransomware Families*
 
 ---
 
